@@ -6,7 +6,7 @@ const {
 } = require('./config');
 const { findClaude } = require('./claude-finder');
 const { ensureMirror } = require('./mirror');
-const { makeLink, makeFileLink, killProcessTree, getClaudeProcesses, getClaudeMemoryMap, spawnDetached } = require('./platform');
+const { makeLink, makeFileLink, killProcessTree, getClaudeProcesses, getClaudeMemoryMap, spawnDetached, getSessionTitleForPid } = require('./platform');
 
 // In-memory tracking of launched instances
 const runningPids = new Map(); // instanceId -> { pid, launchedAt }
@@ -98,9 +98,7 @@ function createInstance(name) {
     id,
     name: name || `Instance ${id}`,
     favourite: false,
-    autoLaunch: false,
-    favouriteOrder: config.instances.length,
-    createdAt: new Date().toISOString()
+    autoLaunch: false
   };
 
   // Setup profile directory
@@ -112,7 +110,7 @@ function createInstance(name) {
   return instance;
 }
 
-async function deleteInstance(id) {
+function deleteInstance(id) {
   // Remove from config FIRST (instant, unblocks UI via polling)
   const config = loadConfig();
   config.instances = config.instances.filter(i => i.id !== id);
@@ -185,15 +183,6 @@ function toggleAutoLaunch(id) {
     saveConfig(config);
   }
   return inst?.autoLaunch;
-}
-
-function reorderFavourites(orderedIds) {
-  const config = loadConfig();
-  for (let i = 0; i < orderedIds.length; i++) {
-    const inst = config.instances.find(x => x.id === orderedIds[i]);
-    if (inst) inst.favouriteOrder = i;
-  }
-  saveConfig(config);
 }
 
 // ─── Launch / Stop ────────────────────────────────────────────────────────
@@ -349,13 +338,21 @@ async function getAllInstances() {
 
   return results.map(({ inst, status, pid, launchedAt }) => {
     const uptime = launchedAt ? formatUptime(Date.now() - launchedAt) : null;
+
+    // Read conversation title from status files (Patch 6) or CCD lock files (Patch 5)
+    let sessionTitle = null;
+    if (status === 'running' && pid) {
+      sessionTitle = getSessionTitleForPid(pid);
+    }
+
     return {
       ...inst,
       status,
       pid: pid || undefined,
       launchedAt: launchedAt || undefined,
       memoryMB: status === 'running' ? (memoryMap[pid] || 0) : undefined,
-      uptime
+      uptime,
+      sessionTitle: sessionTitle || undefined
     };
   });
 }
@@ -404,9 +401,7 @@ function reconcileInstances() {
         id,
         name: `Instance ${id}`,
         favourite: false,
-        autoLaunch: false,
-        favouriteOrder: config.instances.length,
-        createdAt: new Date().toISOString()
+        autoLaunch: false
       });
       existingIds.add(id);
       changed = true;

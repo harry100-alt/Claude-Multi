@@ -227,6 +227,23 @@ function spawnDetached(exe, args, cwd) {
   return child.pid;
 }
 
+/**
+ * Get the active conversation title for a given PID.
+ * Reads session-status files written by the session-reporter (Patch 6).
+ */
+function getSessionTitleForPid(pid) {
+  const statusFile = path.join(
+    process.env.APPDATA || process.env.HOME || '', 'Claude-Multi', 'session-status', pid + '.json'
+  );
+  try {
+    if (fs.existsSync(statusFile)) {
+      const data = JSON.parse(fs.readFileSync(statusFile, 'utf-8'));
+      if (data.pid === pid && data.title && (Date.now() - data.ts < 30000)) return data.title;
+    }
+  } catch {}
+  return null;
+}
+
 module.exports = {
   IS_WIN,
   makeLink,
@@ -234,5 +251,6 @@ module.exports = {
   killProcessTree,
   getClaudeProcesses,
   getClaudeMemoryMap,
-  spawnDetached
+  spawnDetached,
+  getSessionTitleForPid
 };

@@ -1,4 +1,5 @@
 const { ipcMain, shell } = require('electron');
+const net = require('net');
 const {
   createInstance, deleteInstance, renameInstance,
   toggleFavourite, toggleAutoLaunch,
@@ -6,6 +7,8 @@ const {
   getAllInstances, autoLaunchInstances, reconcileInstances
 } = require('./instances');
 const { loadConfig, saveConfig } = require('./config');
+
+const PIPE_NAME = '\\\\.\\pipe\\claude-multi-conflicts';
 
 function setupIpcHandlers(mainWindow) {
   // Detect pre-existing instances from disk and running processes
@@ -70,6 +73,39 @@ function setupIpcHandlers(mainWindow) {
       polling = false;
     }
   }, 2000);
+
+  // Dismiss conflict — remove alwaysOnTop
+  ipcMain.handle('dismiss-conflict', () => mainWindow.setAlwaysOnTop(false));
+
+  // Named pipe server — receives conflict notifications from patched Claude instances
+  const pipeServer = net.createServer((conn) => {
+    let data = '';
+    conn.on('data', (chunk) => { data += chunk; });
+    conn.on('end', () => {
+      try {
+        const msg = JSON.parse(data);
+        if (msg.type === 'conflict' && msg.pid) {
+          let conflictName = `PID ${msg.pid}`;
+          getAllInstances()
+            .then((all) => {
+              const match = all.find(i => i.pid === msg.pid);
+              if (match) conflictName = match.name;
+            })
+            .catch(() => {})
+            .finally(() => {
+              if (!mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('session-conflict', conflictName);
+                mainWindow.setAlwaysOnTop(true);
+                mainWindow.show();
+                mainWindow.focus();
+              }
+            });
+        }
+      } catch {}
+    });
+  });
+  pipeServer.on('error', () => {});
+  pipeServer.listen(PIPE_NAME);
 
   // Auto-launch on startup (after a short delay for UI to load)
   setTimeout(() => autoLaunchInstances().catch(e => console.error('Auto-launch failed:', e)), 3000);

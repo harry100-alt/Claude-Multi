@@ -83,6 +83,16 @@ async function init() {
     document.getElementById('warning-dialog').classList.remove('open');
   });
 
+  // Session conflict dialog
+  document.getElementById('conflict-ok').addEventListener('click', () => {
+    document.getElementById('conflict-dialog').classList.remove('open');
+    window.api.dismissConflict();
+  });
+  window.api.onSessionConflict((instanceName) => {
+    document.getElementById('conflict-name').textContent = instanceName;
+    document.getElementById('conflict-dialog').classList.add('open');
+  });
+
   // Support link — open in external browser
   document.getElementById('support-link').addEventListener('click', (e) => {
     e.preventDefault();
@@ -134,11 +144,10 @@ function render() {
       </div>
     `;
   } else {
-    // Sort: favourites first (by favouriteOrder), then non-favourites by name
+    // Sort: favourites first, then by name
     const sorted = [...instances].sort((a, b) => {
       if (a.favourite && !b.favourite) return -1;
       if (!a.favourite && b.favourite) return 1;
-      if (a.favourite && b.favourite) return (a.favouriteOrder || 0) - (b.favouriteOrder || 0);
       return (a.name || '').localeCompare(b.name || '');
     });
 
@@ -177,6 +186,7 @@ function renderCard(inst) {
       <div class="status-dot ${statusClass}"></div>
       <div class="card-info">
         <div class="card-name" data-action="rename" data-id="${inst.id}">${escapeHtml(inst.name)}</div>
+        ${isRunning && inst.sessionTitle ? `<div class="card-session">${escapeHtml(inst.sessionTitle)}</div>` : ''}
       </div>
       ${statsHtml}
       <div class="card-actions">
@@ -235,15 +245,6 @@ function attachCardListeners() {
       case 'rename':
         startRename(id, target);
         break;
-    }
-  };
-
-  // Double-click to rename
-  container.ondblclick = (e) => {
-    const nameEl = e.target.closest('.card-name');
-    if (nameEl) {
-      const id = parseInt(nameEl.dataset.id, 10);
-      startRename(id, nameEl);
     }
   };
 }
@@ -311,7 +312,6 @@ function openNewDialog() {
   const input = document.getElementById('new-instance-name');
   input.value = '';
   input.placeholder = getNextInstanceName();
-  document.getElementById('new-create').disabled = false;
   document.getElementById('new-dialog').classList.add('open');
   setTimeout(() => input.focus(), 50);
 }

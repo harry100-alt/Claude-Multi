@@ -15,11 +15,11 @@ function setupTray(win) {
   tray = new Tray(icon);
   tray.setToolTip('Claude Multi');
 
-  tray.on('click', (event, bounds) => {
+  tray.on('click', (_, bounds) => {
     toggleTrayMenu(bounds);
   });
 
-  tray.on('right-click', (event, bounds) => {
+  tray.on('right-click', (_, bounds) => {
     toggleTrayMenu(bounds);
   });
 

@@ -33,7 +33,6 @@ const PRIMARY_CLAUDE_DIR = getPrimaryClaudeDir();
 const DEFAULT_CONFIG = {
   instances: [],
   theme: 'dark',
-  version: 1,
   windowBounds: null,
   patchedClaudeVersion: null
 };
@@ -61,7 +60,6 @@ module.exports = {
   APP_DATA_DIR,
   MIRROR_DIR,
   INSTANCES_DIR,
-  CONFIG_FILE,
   PRIMARY_CLAUDE_DIR,
   loadConfig,
   saveConfig,

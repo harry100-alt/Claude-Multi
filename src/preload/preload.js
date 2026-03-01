@@ -29,6 +29,9 @@ contextBridge.exposeInMainWorld('api', {
   maximizeWindow: () => ipcRenderer.invoke('window-maximize'),
   closeWindow: () => ipcRenderer.invoke('window-close'),
 
+  // Conflict dialog
+  dismissConflict: () => ipcRenderer.invoke('dismiss-conflict'),
+
   // Events from main (remove previous listeners to prevent duplicates on reload)
   onInstanceUpdate: (callback) => {
     ipcRenderer.removeAllListeners('instance-update');
@@ -37,5 +40,9 @@ contextBridge.exposeInMainWorld('api', {
   onMaximizeChange: (callback) => {
     ipcRenderer.removeAllListeners('maximize-change');
     ipcRenderer.on('maximize-change', (_, isMaximized) => callback(isMaximized));
+  },
+  onSessionConflict: (callback) => {
+    ipcRenderer.removeAllListeners('session-conflict');
+    ipcRenderer.on('session-conflict', (_, instanceName) => callback(instanceName));
   }
 });

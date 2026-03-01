@@ -5,6 +5,9 @@ const { findClaude, getClaudeVersion } = require('./claude-finder');
 const { MIRROR_DIR, APP_DATA_DIR, loadConfig, saveConfig, ensureDir } = require('./config');
 const { makeLink, IS_WIN } = require('./platform');
 
+// Bump this when patches change — forces mirror rebuild even if Claude version is the same
+const PATCH_VERSION = 8;
+
 /**
  * Ensure the mirror directory exists and is up-to-date.
  * Returns { ok, error? }
@@ -18,14 +21,15 @@ async function ensureMirror() {
   const mirrorExe = path.join(MIRROR_DIR, path.basename(claude.exe));
   const config = loadConfig();
   const currentVersion = getClaudeVersion();
+  const versionKey = `${currentVersion}_p${PATCH_VERSION}`;
 
-  // Check if mirror exists and version matches
-  if (fs.existsSync(mirrorExe) && config.patchedClaudeVersion === currentVersion) {
+  // Check if mirror exists and version matches (includes patch version)
+  if (fs.existsSync(mirrorExe) && config.patchedClaudeVersion === versionKey) {
     return { ok: true };
   }
 
   // Need to create or rebuild mirror
-  return createMirror(claude, currentVersion);
+  return createMirror(claude, versionKey);
 }
 
 async function createMirror(claude, version) {
@@ -117,7 +121,6 @@ async function patchAsar(sourceResourcesDir, destResourcesDir) {
     }
 
     let code = fs.readFileSync(indexJs, 'utf-8');
-    const originalLen = code.length;
 
     // PATCH 1: Remove single-instance lock
     const oldLock = 'Ce.app.requestSingleInstanceLock()?Ce.app.on("second-instance",(e,r,n)=>{if(co())return;lt&&!lt.isDestroyed()&&(lt.isVisible()||lt.show(),lt.isMinimized()&&lt.restore(),lt.focus());const i=d3t(r);i&&YT(i)}):Ce.app.quit()';
@@ -167,11 +170,11 @@ async function patchAsar(sourceResourcesDir, destResourcesDir) {
     }
     // Not fatal if missing
 
-    // PATCH 5: Session locking at CLI spawn point
+    // PATCH 5: Session locking at CLI spawn point + named pipe conflict notification
     const oldSpawn = 'Y={command:q,args:W,cwd:i,env:l,signal:this.abortController.signal};if(this.options.spawnClaudeCodeProcess)';
     const lockCheck = 'Y={command:q,args:W,cwd:i,env:l,signal:this.abortController.signal};' +
       '(function(){' +
-      'var _fs=require("fs"),_p=require("path"),' +
+      'var _fs=require("fs"),_p=require("path"),_net=require("net"),' +
       '_ld=_p.join(process.env.APPDATA||process.env.HOME||"","Claude-Multi","session-locks");' +
       'try{_fs.mkdirSync(_ld,{recursive:!0})}catch(_e){}' +
       'var _ri=W.indexOf("--resume");' +
@@ -183,10 +186,11 @@ async function patchAsar(sourceResourcesDir, destResourcesDir) {
       'if(_d.pid!==process.pid){' +
       'try{' +
       'process.kill(_d.pid,0);' +
-      'require("electron").dialog.showErrorBox(' +
-      '"Session Conflict",' +
-      '"This session is already open in another instance (PID "+_d.pid+"). Close it there first."' +
-      ');' +
+      'try{' +
+      'var _c=_net.connect("\\\\\\\\.\\\\pipe\\\\claude-multi-conflicts",function(){' +
+      '_c.end(JSON.stringify({type:"conflict",pid:_d.pid}))' +
+      '});_c.on("error",function(){})' +
+      '}catch(_pe){}' +
       'throw new Error("session_locked")' +
       '}catch(_e2){' +
       'if(_e2.message==="session_locked")throw _e2' +
@@ -196,7 +200,7 @@ async function patchAsar(sourceResourcesDir, destResourcesDir) {
       'if(_e.message==="session_locked")throw _e' +
       '}' +
       '}' +
-      '_fs.writeFileSync(_lf,JSON.stringify({pid:process.pid,ts:Date.now()}))' +
+      '_fs.writeFileSync(_lf,JSON.stringify({pid:process.pid,ts:Date.now(),cwd:i||""}))' +
       '}' +
       '})();' +
       'if(this.options.spawnClaudeCodeProcess)';
@@ -206,6 +210,51 @@ async function patchAsar(sourceResourcesDir, destResourcesDir) {
     } else {
       // Not fatal — session locking is defense in depth
     }
+
+    // PATCH 6: Session title reporter — writes active conversation title to status file
+    // Queries the header button (truncate+rounded-l) or sidebar active item (bg-bg-300)
+    // Verified via DOM inspection: these selectors match the session name in Claude Desktop
+    const reporterFile = path.join(extractDir, '.vite', 'build', 'session-reporter.js');
+    const cleanReporter = `(function(){
+var electron = require("electron");
+var fs = require("fs");
+var path = require("path");
+
+electron.app.whenReady().then(function(){
+  setInterval(function(){
+    try {
+      var all = electron.webContents.getAllWebContents();
+      for (var i = 0; i < all.length; i++) {
+        var wc = all[i];
+        if (wc.isDestroyed()) continue;
+        var url = wc.getURL();
+        if (!url || url.indexOf("claude.ai") < 0) continue;
+        wc.executeJavaScript(
+          "(function(){try{" +
+          "var b=document.querySelector('button[class*=\\"truncate\\"][class*=\\"rounded-l\\"]');" +
+          "if(b&&b.textContent.trim())return b.textContent.trim();" +
+          "var s=document.querySelector('[class*=\\"bg-bg-300\\"] span[class*=\\"font-base\\"]');" +
+          "if(s&&s.textContent.trim())return s.textContent.trim();" +
+          "return'';}catch(e){return'';}})();"
+        ).then(function(title){
+          if (!title) return;
+          var d = path.join(process.env.APPDATA || "", "Claude-Multi", "session-status");
+          try { fs.mkdirSync(d, {recursive: true}); } catch(x) {}
+          try {
+            fs.writeFileSync(
+              path.join(d, process.pid + ".json"),
+              JSON.stringify({pid: process.pid, title: title, ts: Date.now()})
+            );
+          } catch(x) {}
+        }).catch(function(){});
+        break;
+      }
+    } catch(x) {}
+  }, 5000);
+});
+})();`;
+    fs.writeFileSync(reporterFile, cleanReporter, 'utf-8');
+    code = 'require("./session-reporter");' + code;
 
     // Write patched file
     fs.writeFileSync(indexJs, code, 'utf-8');
