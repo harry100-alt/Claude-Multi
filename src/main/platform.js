@@ -9,7 +9,6 @@ const path = require('path');
 const execAsync = promisify(exec);
 
 const IS_WIN = process.platform === 'win32';
-const IS_MAC = process.platform === 'darwin';
 
 /**
  * Create a directory junction (Windows) or symlink (Mac/Linux).
@@ -33,10 +32,7 @@ function makeLink(linkPath, targetPath) {
   }
 
   if (IS_WIN) {
-    const result = execSync(
-      `cmd /c mklink /J "${linkPath}" "${targetPath}"`,
-      { windowsHide: true, stdio: 'pipe' }
-    );
+    execSync(`cmd /c mklink /J "${linkPath}" "${targetPath}"`, { windowsHide: true, stdio: 'pipe' });
     return true;
   } else {
     fs.symlinkSync(targetPath, linkPath, 'dir');
@@ -233,7 +229,6 @@ function spawnDetached(exe, args, cwd) {
 
 module.exports = {
   IS_WIN,
-  IS_MAC,
   makeLink,
   makeFileLink,
   killProcessTree,

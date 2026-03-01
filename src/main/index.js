@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { setupIpcHandlers } = require('./ipc-handlers');
 const { setupTray } = require('./tray');

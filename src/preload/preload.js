@@ -16,15 +16,10 @@ contextBridge.exposeInMainWorld('api', {
   // Preferences
   toggleFavourite: (id) => ipcRenderer.invoke('toggle-favourite', id),
   toggleAutoLaunch: (id) => ipcRenderer.invoke('toggle-autolaunch', id),
-  reorderFavourites: (ids) => ipcRenderer.invoke('reorder-favourites', ids),
 
   // Theme
   getTheme: () => ipcRenderer.invoke('get-theme'),
   setTheme: (theme) => ipcRenderer.invoke('set-theme', theme),
-
-  // Setup
-  findClaude: () => ipcRenderer.invoke('find-claude'),
-  ensureMirror: () => ipcRenderer.invoke('ensure-mirror'),
 
   // Shell
   openExternal: (url) => ipcRenderer.invoke('open-external', url),

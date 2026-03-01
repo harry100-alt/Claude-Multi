@@ -29,7 +29,6 @@ const MIRROR_DIR = path.join(APP_DATA_DIR, 'app');
 const INSTANCES_DIR = path.join(APP_DATA_DIR, 'instances');
 const CONFIG_FILE = path.join(APP_DATA_DIR, 'config.json');
 const PRIMARY_CLAUDE_DIR = getPrimaryClaudeDir();
-const CCD_SESSIONS_DIR = path.join(PRIMARY_CLAUDE_DIR, 'claude-code-sessions');
 
 const DEFAULT_CONFIG = {
   instances: [],
@@ -64,7 +63,6 @@ module.exports = {
   INSTANCES_DIR,
   CONFIG_FILE,
   PRIMARY_CLAUDE_DIR,
-  CCD_SESSIONS_DIR,
   loadConfig,
   saveConfig,
   ensureDir

@@ -1,15 +1,11 @@
 const { ipcMain, shell } = require('electron');
 const {
   createInstance, deleteInstance, renameInstance,
-  toggleFavourite, toggleAutoLaunch, reorderFavourites,
+  toggleFavourite, toggleAutoLaunch,
   launchInstance, stopInstance, launchAll, stopAll,
   getAllInstances, autoLaunchInstances, reconcileInstances
 } = require('./instances');
 const { loadConfig, saveConfig } = require('./config');
-const { findClaude } = require('./claude-finder');
-const { ensureMirror } = require('./mirror');
-
-let statusInterval = null;
 
 function setupIpcHandlers(mainWindow) {
   // Detect pre-existing instances from disk and running processes
@@ -23,7 +19,6 @@ function setupIpcHandlers(mainWindow) {
   ipcMain.handle('stop-instance', (_, id) => stopInstance(id));
   ipcMain.handle('toggle-favourite', (_, id) => toggleFavourite(id));
   ipcMain.handle('toggle-autolaunch', (_, id) => toggleAutoLaunch(id));
-  ipcMain.handle('reorder-favourites', (_, ids) => reorderFavourites(ids));
   ipcMain.handle('launch-all', () => launchAll());
   ipcMain.handle('stop-all', () => stopAll());
 
@@ -33,13 +28,6 @@ function setupIpcHandlers(mainWindow) {
     config.theme = theme;
     saveConfig(config);
   });
-
-  ipcMain.handle('find-claude', () => {
-    const result = findClaude();
-    return result ? { found: true, path: result.exe } : { found: false };
-  });
-
-  ipcMain.handle('ensure-mirror', () => ensureMirror());
 
   // Shell — only allow https URLs
   ipcMain.handle('open-external', (_, url) => {
@@ -73,7 +61,7 @@ function setupIpcHandlers(mainWindow) {
 
   // Push status updates every 2 seconds (async, with overlap protection)
   let polling = false;
-  statusInterval = setInterval(async () => {
+  setInterval(async () => {
     if (polling || !mainWindow || mainWindow.isDestroyed()) return;
     polling = true;
     try {

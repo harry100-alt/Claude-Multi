@@ -1,6 +1,6 @@
 {
   "name": "claude-multi",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Multi-instance manager for Claude Desktop",
   "main": "src/main/index.js",
   "scripts": {
@@ -12,8 +12,7 @@
   },
   "devDependencies": {
     "electron": "^33.0.0",
-    "electron-builder": "^25.0.0",
-    "serve": "^14.2.5"
+    "electron-builder": "^25.0.0"
   },
   "dependencies": {
     "@electron/asar": "^3.2.0",

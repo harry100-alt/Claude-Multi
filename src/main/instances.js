@@ -442,7 +442,6 @@ module.exports = {
   renameInstance,
   toggleFavourite,
   toggleAutoLaunch,
-  reorderFavourites,
   launchInstance,
   stopInstance,
   launchAll,

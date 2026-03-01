@@ -263,4 +263,4 @@ function cleanMirrorDir(dir) {
   } catch {}
 }
 
-module.exports = { ensureMirror, createMirror };
+module.exports = { ensureMirror };

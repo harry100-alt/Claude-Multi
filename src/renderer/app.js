@@ -158,9 +158,7 @@ function renderCard(inst) {
         <div>Running for ${inst.uptime || '0m'}</div>
         <div>${inst.memoryMB || 0} MB</div>
       </div>`
-    : `<div class="card-stats">
-        <div>${inst.lastActive || ''}</div>
-      </div>`;
+    : '';
 
   const actionBtn = isRunning
     ? `<button class="btn btn-stop" data-action="stop" data-id="${inst.id}">${ICON.stop} Stop</button>`
@@ -179,7 +177,6 @@ function renderCard(inst) {
       <div class="status-dot ${statusClass}"></div>
       <div class="card-info">
         <div class="card-name" data-action="rename" data-id="${inst.id}">${escapeHtml(inst.name)}</div>
-        ${inst.sessionTitle ? `<div class="card-session">${escapeHtml(inst.sessionTitle)}</div>` : ''}
       </div>
       ${statsHtml}
       <div class="card-actions">
