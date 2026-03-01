@@ -1,6 +1,6 @@
 {
   "name": "claude-multi",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Multi-instance manager for Claude Desktop",
   "main": "src/main/index.js",
   "scripts": {

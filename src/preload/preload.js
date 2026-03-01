@@ -26,6 +26,9 @@ contextBridge.exposeInMainWorld('api', {
   findClaude: () => ipcRenderer.invoke('find-claude'),
   ensureMirror: () => ipcRenderer.invoke('ensure-mirror'),
 
+  // Shell
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+
   // Window controls
   minimizeWindow: () => ipcRenderer.invoke('window-minimize'),
   maximizeWindow: () => ipcRenderer.invoke('window-maximize'),

@@ -1,4 +1,4 @@
-const { ipcMain } = require('electron');
+const { ipcMain, shell } = require('electron');
 const {
   createInstance, deleteInstance, renameInstance,
   toggleFavourite, toggleAutoLaunch, reorderFavourites,
@@ -40,6 +40,13 @@ function setupIpcHandlers(mainWindow) {
   });
 
   ipcMain.handle('ensure-mirror', () => ensureMirror());
+
+  // Shell — only allow https URLs
+  ipcMain.handle('open-external', (_, url) => {
+    if (typeof url === 'string' && url.startsWith('https://')) {
+      shell.openExternal(url);
+    }
+  });
 
   // Window controls
   ipcMain.handle('window-minimize', () => mainWindow.minimize());

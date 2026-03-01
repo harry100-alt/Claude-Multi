@@ -83,6 +83,12 @@ async function init() {
     document.getElementById('warning-dialog').classList.remove('open');
   });
 
+  // Support link — open in external browser
+  document.getElementById('support-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    window.api.openExternal('https://ko-fi.com/harry73');
+  });
+
   // Close dialogs on overlay click
   for (const overlay of document.querySelectorAll('.dialog-overlay')) {
     overlay.addEventListener('click', (e) => {
