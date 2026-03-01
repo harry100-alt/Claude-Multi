@@ -1,0 +1,54 @@
+{
+  "name": "claude-multi",
+  "version": "1.0.7",
+  "description": "Multi-instance manager for Claude Desktop",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "serve": "^14.2.5"
+  },
+  "dependencies": {
+    "@electron/asar": "^3.2.0",
+    "@electron/fuses": "^1.8.0"
+  },
+  "author": "Claude Multi",
+  "build": {
+    "appId": "com.claude-multi.app",
+    "productName": "Claude Multi",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*"
+    ],
+    "win": {
+      "target": [
+        "dir",
+        "portable"
+      ],
+      "icon": "build/icon.png",
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icon.icns"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build/icon.png"
+    }
+  }
+}

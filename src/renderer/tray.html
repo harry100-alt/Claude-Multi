@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Claude Multi Tray</title>
+  <style>
+    :root, [data-theme="dark"] {
+      --card-bg: #353532;
+      --card-border: rgba(245,244,239,0.08);
+      --text-primary: #f5f4ef;
+      --text-secondary: #a8a79e;
+      --divider: rgba(245,244,239,0.1);
+      --destructive: #e05252;
+      --hover-bg: rgba(108,106,96,0.15);
+      --status-green: #22c55e;
+      --status-gray: #6b7280;
+    }
+    [data-theme="light"] {
+      --card-bg: #ffffff;
+      --card-border: rgba(108,106,96,0.12);
+      --text-primary: #2b2b28;
+      --text-secondary: #6c6a60;
+      --divider: rgba(108,106,96,0.2);
+      --destructive: #e05252;
+      --hover-bg: rgba(108,106,96,0.15);
+      --status-green: #22c55e;
+      --status-gray: #6b7280;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: transparent;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .tray-menu {
+      background: var(--card-bg);
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      min-width: 200px;
+      padding: 4px 0;
+    }
+
+    /* Header */
+    .tray-header {
+      padding: 8px 12px;
+      color: var(--text-primary);
+      font-weight: bold;
+      font-size: 13px;
+      cursor: default;
+    }
+
+    /* Separator */
+    .tray-sep {
+      height: 1px;
+      background: var(--divider);
+      margin: 4px 0;
+    }
+
+    /* All clickable items */
+    .tray-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 6px 12px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-primary);
+      text-align: left;
+      transition: background-color 80ms;
+    }
+    .tray-item:hover {
+      background: var(--hover-bg);
+    }
+
+    /* Status dot */
+    .tray-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .tray-dot.running { background: var(--status-green); }
+    .tray-dot.stopped { background: var(--status-gray); }
+
+    .tray-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Icons */
+    .tray-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    /* Quit gets destructive color */
+    .tray-item.quit {
+      color: var(--destructive);
+    }
+  </style>
+</head>
+<body>
+  <div class="tray-menu" id="menu"></div>
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const icons = {
+      play: '<svg class="tray-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+      square: '<svg class="tray-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>',
+      maximize: '<svg class="tray-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></svg>',
+      power: '<svg class="tray-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" x2="12" y1="2" y2="12"/></svg>'
+    };
+
+    ipcRenderer.on('tray-data', (_, { instances, theme }) => {
+      document.documentElement.setAttribute('data-theme', theme);
+      const menu = document.getElementById('menu');
+
+      let html = '<div class="tray-header">Claude Multi</div>';
+      html += '<div class="tray-sep"></div>';
+
+      // Instance list
+      for (const inst of instances) {
+        const running = inst.status === 'running';
+        const action = running ? 'stop' : 'launch';
+        html += `<button class="tray-item" data-action="${action}" data-id="${inst.id}">
+          <div class="tray-dot ${running ? 'running' : 'stopped'}"></div>
+          <span class="tray-name">${esc(inst.name)}</span>
+        </button>`;
+      }
+
+      // Separator + actions
+      html += '<div class="tray-sep"></div>';
+      html += `<button class="tray-item" data-action="launch-all">${icons.play} <span>Launch All</span></button>`;
+      html += `<button class="tray-item" data-action="close-all">${icons.square} <span>Close All</span></button>`;
+      html += '<div class="tray-sep"></div>';
+      html += `<button class="tray-item" data-action="open">${icons.maximize} <span>Open Manager</span></button>`;
+      html += `<button class="tray-item quit" data-action="quit">${icons.power} <span>Quit</span></button>`;
+
+      menu.innerHTML = html;
+
+      // Report content height for window resize
+      requestAnimationFrame(() => {
+        ipcRenderer.send('tray-resize', document.body.scrollHeight);
+      });
+    });
+
+    document.getElementById('menu').addEventListener('click', (e) => {
+      const item = e.target.closest('.tray-item');
+      if (!item) return;
+      const action = item.dataset.action;
+      const id = item.dataset.id ? parseInt(item.dataset.id, 10) : null;
+      ipcRenderer.send('tray-action', { action, id });
+    });
+
+    function esc(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+  </script>
+</body>
+</html>

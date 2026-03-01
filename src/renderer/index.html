@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Multi</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <img class="claude-sparkle" src="sparkle.png" alt="">
+        <h1>Claude Multi</h1>
+      </div>
+      <div class="header-right">
+        <div class="theme-toggle">
+          <svg id="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <div class="toggle-switch checked" id="theme-toggle">
+            <div class="thumb"></div>
+          </div>
+          <svg id="moon-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </div>
+        <button class="btn btn-outline" id="btn-launch-all">Launch All</button>
+        <button class="btn btn-close-all btn-outline" id="btn-close-all">Close All</button>
+        <button class="btn btn-accent" id="btn-new-instance">+ New Instance</button>
+        <div class="window-controls">
+          <button class="win-btn" id="win-minimize" title="Minimize">
+            <svg viewBox="0 0 12 12"><line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+          <button class="win-btn" id="win-maximize" title="Maximize">
+            <svg viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+          <button class="win-btn win-close" id="win-close" title="Close">
+            <svg viewBox="0 0 12 12"><line x1="2.5" y1="2.5" x2="9.5" y2="9.5" stroke="currentColor" stroke-width="1.2"/><line x1="9.5" y1="2.5" x2="2.5" y2="9.5" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instance cards -->
+    <div class="cards" id="cards-container">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span id="footer-summary">0 running</span>
+      <span class="footer-disclaimer">Not affiliated with or endorsed by Anthropic</span>
+      <a id="support-link">Support this project</a>
+    </div>
+  </div>
+
+  <!-- First Launch Warning Dialog -->
+  <div class="dialog-overlay" id="warning-dialog">
+    <div class="dialog">
+      <h2>Heads up</h2>
+      <p>Claude Multi is experimental software that hasn't been extensively tested. There is a real chance you could damage your Claude Desktop installation if you misuse this tool.</p>
+      <p class="warning-detail">Issues caused may not be fixable by simply reinstalling Claude. Use at your own risk and avoid modifying instance files manually.</p>
+      <div class="dialog-actions">
+        <button class="btn-create" id="warning-ok">I understand</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Instance Dialog -->
+  <div class="dialog-overlay" id="new-dialog">
+    <div class="dialog">
+      <h2>New Instance</h2>
+      <p>Give your Claude instance a name.</p>
+      <input type="text" id="new-instance-name" placeholder="" autocomplete="off" maxlength="50">
+      <div class="dialog-actions">
+        <button class="btn-cancel" id="new-cancel">Cancel</button>
+        <button class="btn-create" id="new-create">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auto-launch Explanation Dialog -->
+  <div class="dialog-overlay" id="autolaunch-dialog">
+    <div class="dialog">
+      <h2>Auto-launch</h2>
+      <p>Instances with auto-launch enabled will start automatically whenever Claude Multi opens.</p>
+      <div class="dialog-actions">
+        <button class="btn-create" id="autolaunch-ok">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Dialog -->
+  <div class="dialog-overlay" id="delete-dialog">
+    <div class="dialog">
+      <h2>Delete Instance</h2>
+      <p>Are you sure you want to delete <strong id="delete-name"></strong>? This will remove the instance profile and cannot be undone.</p>
+      <div class="dialog-actions">
+        <button class="btn-cancel" id="delete-cancel">Cancel</button>
+        <button class="btn-delete" id="delete-confirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
